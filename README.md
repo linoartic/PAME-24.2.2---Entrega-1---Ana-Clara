@@ -8,11 +8,11 @@ Este repositório contém a solução desenvolvida para o case do processo selet
 Com a expansão do Hotel F-Luxo, surgiram desafios relacionados à **gestão de reservas, clientes e promoções**, devido à descentralização dos dados e processos manuais ineficientes.  
 
 Dessa forma, este sistema foi desenvolvido para:  
-✅ **Automatizar o cadastro e login de clientes e funcionários**  
-✅ **Gerenciar reservas de forma prática e organizada**  
-✅ **Facilitar a consulta de clientes, quartos e reservas**  
-✅ **Permitir que funcionários atualizem o status das reservas**  
-✅ **Melhorar a experiência do cliente e otimizar a operação do hotel**  
+-**Automatizar o cadastro e login de clientes e funcionários**  
+-**Gerenciar reservas de forma prática e organizada**  
+-**Facilitar a consulta de clientes, quartos e reservas**  
+-**Permitir que funcionários atualizem o status das reservas**  
+-**Melhorar a experiência do cliente e otimizar a operação do hotel**  
 
 ---
 
