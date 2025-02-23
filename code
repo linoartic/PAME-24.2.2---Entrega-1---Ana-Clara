@@ -1,0 +1,658 @@
+#!/usr/bin/env node
+
+//npm install cli-table3 chalk readline-sync
+
+// Importacao de bibliotecas necessarias
+import Table from "cli-table3";
+import chalk from "chalk";
+import readline from "readline-sync";
+import fs from "fs";
+
+// Exibir titulo do sistema
+console.log(chalk.gray("Sistema de Gerenciamento de Reservas\n"));
+console.log(chalk.blue.bold(" Bem-vindo ao Hotel F-Luxo!"));
+
+// Definicao das classes
+class Cliente {
+    constructor(id, nome, datanascimento, cpf, email, senha) {
+        this.id = id;
+        this.nome = nome;
+        this.dataNascimento = datanascimento;
+        this.cpf = cpf;
+        this.email = email;
+        this.senha = senha;
+    }
+}
+//classe funcionário representa um funcionario do hotel
+class Funcionario {
+    constructor(id, nome_usuario, cpf, email, senha) {
+        this.id = id;
+        this.nome_usuario = nome_usuario;
+        this.cpf = cpf;
+        this.email = email;
+        this.senha = senha;
+    }
+}
+//classe reserva representa uma reserva feita por um cliente
+class Avaliacao {
+    constructor(nota, comentario) {
+        this.nota = nota;
+        this.comentario = comentario;
+        this.data = new Date().toLocaleDateString();
+    }
+}
+
+class Reserva {
+    constructor(id, cliente_id, status, check_in, check_out) {
+        this.id = id;
+        this.cliente_id = cliente_id;
+        this.status = status;
+        this.check_in = check_in;
+        this.check_out = check_out;
+        this.avaliacao = null;
+    }
+
+    avaliar(nota, comentario) {
+        if (nota < 1 || nota > 5) {
+            throw new Error("Nota deve ser entre 1 e 5");
+        }
+        this.avaliacao = new Avaliacao(nota, comentario);
+    }
+}
+
+class Quarto {
+    constructor(numero, tipo, preco_noite) {
+        this.numero = numero;
+        this.tipo = tipo;
+        this.preco_noite = preco_noite;
+        this.status = "Disponivel";
+    }
+}
+
+class CancelamentoReserva {
+    constructor(sistema) {
+        this.sistema = sistema;
+    }
+
+    cancelar(id_reserva) {
+        const reserva = this.sistema.reservas.find(r => r.id === id_reserva);
+        
+        if (!reserva) {
+            console.log(chalk.red(" Reserva não encontrada."));
+            return false;
+        }
+
+        if (reserva.status === "Cancelada") {
+            console.log(chalk.yellow(" Esta reserva ja esta cancelada."));
+            return false;
+        }
+
+        reserva.status = "Cancelada";
+        this.sistema.salvar_dados();
+        console.log(chalk.green(" Reserva cancelada com sucesso!"));
+        return true;
+    }
+}
+
+//classe sistema gerencia clientes, funcionarios e reservas
+class Sistema {
+    constructor() {
+        this.clientes = [];// Lista de clientes cadastrados
+        //funcionarios cadastrados
+        this.funcionarios = [
+            new Funcionario(1, "Ana Silva", "12345678900", "ana@hotel.com", "senha123"),
+            new Funcionario(2, "Carlos Souza", "98765432100", "carlos@hotel.com", "senha456"),
+            new Funcionario(3, "Mariana Lima", "45612378900", "mariana@hotel.com", "senha789")
+        ];
+        this.reservas = []; // Lista de reservas registradas
+        this.quartos = [
+            new Quarto(101, "Simples", 150),
+            new Quarto(102, "Simples", 150),
+            new Quarto(201, "Duplo", 250),
+            new Quarto(202, "Duplo", 250),
+            new Quarto(301, "Suíte", 400),
+            new Quarto(302, "Suíte", 400)
+        ];
+        this.usuario_logado = null; // Usuario logado no momento
+        this.carregar_dados(); // Carrega os dados salvos ao iniciar
+    }
+ // Salva os dados do sistema em um arquivo JSON
+    salvar_dados() {
+        const dados = {
+            clientes: this.clientes,
+            funcionarios: this.funcionarios,
+            reservas: this.reservas
+        };
+        fs.writeFileSync("dados.json", JSON.stringify(dados, null, 2));
+    }
+    // Carrega os dados do arquivo JSON, se existir
+    carregar_dados() {
+        // Funcionários padrão
+        this.funcionarios = [
+            new Funcionario(1, "Ana Silva", "12345678900", "ana@hotel.com", "senha123"),
+            new Funcionario(2, "Carlos Souza", "98765432100", "carlos@hotel.com", "senha456"),
+            new Funcionario(3, "Mariana Lima", "45612378900", "mariana@hotel.com", "senha789")
+        ];
+        
+        // Carrega dados adicionais se o arquivo existir
+        if (fs.existsSync("dados.json")) {
+            const dados = JSON.parse(fs.readFileSync("dados.json"));
+            this.clientes = dados.clientes || [];
+            this.reservas = dados.reservas || [];
+        }
+    }
+    ver_meus_dados() {
+        console.log(chalk.cyan("\nMeus Dados\n"));
+        console.log(this.usuario_logado);
+    }
+    
+    mudar_status_reserva() {
+        console.log(chalk.cyan("\nMudar Status da Reserva\n"));
+        const id = readline.questionInt("ID da reserva: ");
+        const reserva = this.reservas.find(r => r.id === id);
+        if (!reserva) {
+            console.log(chalk.red(" Reserva nao encontrada."));
+            return;
+        }
+        const status = readline.question("Novo status (pendente, adiada, realizada, cancelada): ");
+        reserva.status = status;
+        this.salvar_dados();
+        console.log(chalk.green(" Status atualizado com sucesso!"));
+    }
+            // Metodo para cadastrar uma nova reserva
+    cadastrar_reserva() {
+        console.log(chalk.cyan("\nCadastro de Reserva\n"));
+    
+        // Buscar cliente pelo email
+        const email = readline.question("Digite o e-mail do cliente: ");
+        const cliente = this.clientes.find(c => c.email === email);
+    
+        if (!cliente) {
+            console.log(chalk.red(" Cliente nao encontrado. Cadastre-o primeiro."));
+            return;
+        }
+    
+        // Criando uma nova reserva e adicionando ao sistema
+        const checkIn = readline.question("Data de check-in (DD-MM-AAAA): ");
+        const checkOut = readline.question("Data de check-out (DD-MM-AAAA): ");
+
+        // Mostrar quartos disponíveis
+        const quartosDisponiveis = this.quartos.filter(q => q.status === "Disponivel");
+        
+        if (quartosDisponiveis.length === 0) {
+            console.log(chalk.red(" Nao ha quartos disponiveis no momento."));
+            return;
+        }
+
+        const table = new Table({
+            head: ["Numero", "Tipo", "Preco/noite"].map(h => chalk.bold(h)),
+            colWidths: [10, 15, 15],
+        });
+
+        quartosDisponiveis.forEach(quarto => {
+            table.push([
+                quarto.numero,
+                quarto.tipo,
+                `R$ ${quarto.preco_noite.toFixed(2)}`
+            ]);
+        });
+
+        console.log("\n📋 " + chalk.blue.bold("Quartos Disponiveis") + "\n");
+        console.log(table.toString());
+
+        // Selecionar quarto
+        const numeroQuarto = readline.questionInt("\nNumero do quarto desejado: ");
+        const quartoSelecionado = this.quartos.find(q => q.numero === numeroQuarto);
+
+        if (!quartoSelecionado || quartoSelecionado.status !== "Disponivel") {
+            console.log(chalk.red(" Quarto invalido ou indisponivel."));
+            return;
+        }
+
+        // Criar reserva
+        const reserva = new Reserva(this.reservas.length + 1, cliente.id, "Confirmada", checkIn, checkOut);
+        reserva.quarto_numero = numeroQuarto; // Associar quarto à reserva
+        this.reservas.push(reserva);
+        
+        // Atualizar status do quarto
+        quartoSelecionado.status = "Reservado";
+        this.salvar_dados();
+    
+        console.log(chalk.green(` Reserva criada para ${cliente.nome} (${cliente.email}) no quarto ${numeroQuarto}!`));
+    }
+
+    // Método genérico para listar dados
+    listar_dados(tipo, dados, colunas) {
+        if (dados.length === 0) {
+            console.log(chalk.yellow(`⚠️ Nenhum ${tipo} encontrado.`));
+            return;
+        }
+
+        const table = new Table({
+            head: colunas.map(h => chalk.bold(h)),
+            colWidths: colunas.map(() => 15) // Colunas de tamanho uniforme
+        });
+
+        dados.forEach(item => {
+            const linha = colunas.map(col => {
+                if (col === "Status") {
+                    return {
+                        "Confirmada": chalk.green(item.status),
+                        "Cancelada": chalk.red(item.status),
+                        "Pendente": chalk.yellow(item.status)
+                    }[item.status] || item.status;
+                }
+                return item[col.toLowerCase()] || item[col];
+            });
+            table.push(linha);
+        });
+
+        console.log(`\n📋 ${chalk.blue.bold(`Lista de ${tipo}`)}\n`);
+        console.log(table.toString());
+    }
+
+    listar_clientes() {
+        this.listar_dados("Clientes", this.clientes, ["ID", "Nome", "E-mail", "CPF", "Data Nasc."]);
+    }
+
+    listar_reservas() {
+        const reservasComNomes = this.reservas.map(reserva => {
+            const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
+            return {
+                ...reserva,
+                cliente: cliente ? cliente.nome : "Nao encontrado"
+            };
+        });
+        this.listar_dados("Reservas", reservasComNomes, ["ID", "Cliente", "Check-in", "Check-out", "Status"]);
+    }
+
+    cadastrar_cliente() {
+        console.log(chalk.cyan("\nCadastro de Cliente\n"));
+        const nome = readline.question("Nome: ");
+        const data_nascimento = readline.question("Data de Nascimento: ");
+        const cpf = readline.question("CPF: ");
+    
+        // Armazena a função validar_email corretamente
+    
+        const senha = readline.question("Senha: ", { hideEchoBack: true });
+    
+        const cliente = new Cliente(this.clientes.length + 1, nome, dataNascimento, cpf, email, senha);
+        this.clientes.push(cliente);
+        this.salvarDados();
+        console.log(chalk.green(" Cliente cadastrado com sucesso!"));
+    }
+    // Metodo principal que exibe o menu do sistema
+    adicionar_quarto() {
+        console.log(chalk.cyan("\nAdicionar Quarto\n"));
+        console.log(chalk.green(" Funcionalidade ainda a ser implementada."));
+    }
+
+    cadastrar_reserva() {
+        console.log(chalk.cyan("\nCadastro de Reserva\n"));
+    
+        // Buscar cliente pelo email
+        const email = readline.question("Digite o e-mail do cliente: ");
+        const cliente = this.clientes.find(c => c.email === email);
+    
+        if (!cliente) {
+            console.log(chalk.red("Cliente nao encontrado. Cadastre-o primeiro."));
+            return;
+        }
+    
+        // Criando uma nova reserva e adicionando ao sistema
+        const checkIn = readline.question("Data de check-in (DD-MM-AAAA): ");
+        const checkOut = readline.question("Data de check-out (DD-MM-AAAA): ");
+        
+        const reserva = new Reserva(this.reservas.length + 1, cliente.id, "Confirmada", checkIn, checkOut);
+        this.reservas.push(reserva);
+        this.salvar_dados();
+    
+        console.log(chalk.green(`Reserva criada para ${cliente.nome} (${cliente.email})!`));
+    }
+
+      // Lista todos os clientes cadastrados no sistema
+    listar_clientes() {
+        if (this.clientes.length === 0) {
+            console.log(chalk.yellow(" Nenhum cliente cadastrado."));
+            return;
+        }
+
+        const table = new Table({
+            head: ["ID", "Nome", "E-mail", "CPF", "Data Nasc."].map(h => chalk.bold(h)),
+            colWidths: [5, 20, 25, 15, 12],
+        });
+
+        this.clientes.forEach(cliente => {
+            table.push([
+                cliente.id,
+                cliente.nome,
+                cliente.email,
+                cliente.cpf,
+                cliente.dataNascimento
+            ]);
+        });
+
+        console.log("\n📋 " + chalk.blue.bold("Lista de Clientes") + "\n");
+        console.log(table.toString());
+    }
+
+        // Lista todas as reservas cadastradas
+    listar_reservas() {
+        if (this.reservas.length === 0) {
+            console.log(chalk.yellow(" Nenhuma reserva encontrada."));
+            return;
+        }
+    
+        const table = new Table({
+            head: ["ID", "Cliente", "Check-in", "Check-out", "Status"].map(h => chalk.bold(h)),
+            colWidths: [5, 20, 15, 15, 12],
+        });
+    
+        this.reservas.forEach(reserva => {
+            const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
+            const nome_cliente = cliente ? cliente.nome : "Nao encontrado";
+    
+            const status_colorido = {
+                "Confirmada": chalk.green(reserva.status),
+                "Cancelada": chalk.red(reserva.status),
+                "Pendente": chalk.yellow(reserva.status)
+            }[reserva.status] || reserva.status;
+    
+            table.push([
+                reserva.id,
+                nome_cliente, // Exibir o nome do cliente em vez do ID
+                reserva.checkIn,
+                reserva.checkOut,
+                status_colorido
+            ]);
+        });
+    
+        console.log("\n📋 " + chalk.blue.bold("Lista de Reservas") + "\n");
+        console.log(table.toString());
+    }
+    
+    
+
+    cadastrar_cliente() {
+        console.log(chalk.cyan("\nCadastro de Cliente\n"));
+        const nome = readline.question("Nome: ");
+        const data_nascimento = readline.question("Data de Nascimento: ");
+        const cpf = readline.question("CPF: ");
+    
+        // Armazena a função validar_email corretamente
+    
+        const senha = readline.question("Senha: ", { hideEchoBack: true });
+    
+        const cliente = new Cliente(this.clientes.length + 1, nome, dataNascimento, cpf, email, senha);
+        this.clientes.push(cliente);
+        this.salvarDados();
+        console.log(chalk.green(" Cliente cadastrado com sucesso!"));
+    }
+    // Metodo principal que exibe o menu do sistema
+    menu_funcionario() {
+        while (true) {
+            const opcoes = [
+                "Cadastro de clientes",
+                "Cadastro de funcionarios",
+                "Login",
+                "Criar reserva",
+                "Listar clientes",
+                "Listar reservas",
+                "Sair"
+            ];
+            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
+            
+            if (escolha === 0) {
+                this.cadastrar_cliente();
+            } else if (escolha === 1) {
+                this.cadastrar_funcionario();
+            } else if (escolha === 2) {
+                this.login();
+                if (this.usuario_logado) break;
+            } else if (escolha === 3) {
+                this.cadastrar_reserva();
+            } else if (escolha === 4) {
+                this.listar_clientes();
+            } else if (escolha === 5) {
+                this.listar_reservas();
+            } else if (escolha === 6) {
+                console.log(chalk.magenta("\nObrigado por usar o nosso sistema!\n"));
+                return;
+            } else {
+                console.log(chalk.red("Esta nao e uma opcao valida"));
+            }
+        }
+    }
+  
+    cadastrar_usuario(tipo) {
+        console.log(chalk.cyan(`\nCadastro de ${tipo}\n`));
+        const nome = readline.question("Nome: ");
+        const cpf = readline.question("CPF: ");
+        const email = readline.question("E-mail: ");
+        const senha = readline.question("Senha: ", { hideEchoBack: true });
+        
+        if (tipo === "Cliente") {
+            const cliente = new Cliente(this.clientes.length + 1, nome, "", cpf, email, senha);
+            this.clientes.push(cliente);
+        } else {
+            const funcionario = new Funcionario(this.funcionarios.length + 1, nome, cpf, email, senha);
+            this.funcionarios.push(funcionario);
+        }
+        this.salvar_dados();
+        console.log(chalk.green(` ${tipo} cadastrado com sucesso!`));
+    }
+
+    login() {
+        console.log(chalk.cyan("\nLogin\n"));
+        const email = readline.question("E-mail: ");
+        const senha = readline.question("Senha: ", { hideEchoBack: true });
+        
+        // Busca usuário (funcionário ou cliente)
+        const usuario = [...this.funcionarios, ...this.clientes]
+            .find(u => u.email.toLowerCase() === email.toLowerCase());
+            
+        if (!usuario) {
+            console.log(chalk.red(" Email nao cadastrado"));
+            return;
+        }
+        
+        if (usuario.senha !== senha) {
+            console.log(chalk.red(" Senha incorreta"));
+            return;
+        }
+        
+        this.usuario_logado = usuario;
+        console.log(chalk.green(` Login realizado! Bem-vindo(a), ${usuario.nome || usuario.nome_usuario}`));
+        
+        if (usuario instanceof Funcionario) {
+            this.menu_funcionario();
+        } else {
+            this.menu_cliente();
+        }
+    }
+    
+    exibir_menu(titulo, opcoes, acoes) {
+        while (true) {
+            console.log(chalk.cyan(`\n${titulo}\n`));
+            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
+            
+            if (escolha === -1) return;
+            
+            const acao = acoes[escolha];
+            if (acao) {
+                acao();
+            } else {
+                console.log(chalk.red(" Opcao invalida"));
+            }
+        }
+    }
+
+    menu_cliente() {
+        const opcoes = [
+            "Ver Meus Dados",
+            "Ver Lista de Quartos", 
+            "Fazer Reserva",
+            "Cancelar Reserva",
+            "Ver Minhas Reservas",
+            "Avaliar Estadia",
+            "Sair"
+        ];
+
+        const acoes = [
+            () => console.log(this.usuario_logado),
+            () => {
+                const table = new Table({
+                    head: ["Numero", "Tipo", "Preco/noite", "Status"].map(h => chalk.bold(h)),
+                    colWidths: [10, 15, 15, 15],
+                });
+
+                this.quartos.forEach(quarto => {
+                    table.push([
+                        quarto.numero,
+                        quarto.tipo,
+                        `R$ ${quarto.preco_noite.toFixed(2)}`,
+                        quarto.status === "Disponivel" ? chalk.green(quarto.status) : chalk.red(quarto.status)
+                    ]);
+                });
+
+                console.log("\n📋 " + chalk.blue.bold("Lista de Quartos Disponiveis") + "\n");
+                console.log(table.toString());
+                console.log(chalk.yellow("\nℹ️  Para reservar um quarto, selecione a opcao 'Fazer Reserva'"));
+            },
+            () => this.cadastrar_reserva(),
+            () => {
+                const id_reserva = readline.questionInt("ID da reserva para cancelar: ");
+                new CancelamentoReserva(this).cancelar(id_reserva);
+            },
+            () => this.listar_reservas(),
+            () => {
+                console.log(chalk.cyan("\nAvaliar Estadia\n"));
+                const id_reserva = readline.questionInt("ID da reserva: ");
+                const reserva = this.reservas.find(r => r.id === id_reserva);
+                
+                if (!reserva || reserva.cliente_id !== this.usuario_logado.id) {
+                    console.log(chalk.red(" Reserva nao encontrada ou nao pertence a voce."));
+                    return;
+                }
+                
+                if (reserva.status !== "Realizada") {
+                    console.log(chalk.red(" So e possivel avaliar estadias realizadas."));
+                    return;
+                }
+                
+                const nota = readline.questionInt("Nota (1 a 5): ");
+                const comentario = readline.question("Comentario: ");
+                
+                try {
+                    reserva.avaliar(nota, comentario);
+                    this.salvar_dados();
+                    console.log(chalk.green(" Avaliacao registrada com sucesso!"));
+                } catch (error) {
+                    console.log(chalk.red(` Erro: ${error.message}`));
+                }
+            }
+        ];
+
+        this.exibir_menu("Menu do Cliente", opcoes, acoes);
+    }
+    
+    menu_funcionario() {
+        const opcoes = [
+            "Ver Meus Dados",
+            "Ver Lista de Reservas", 
+            "Ver Lista de Quartos",
+            "Ver Lista de Clientes",
+            "Mudar status da reserva",
+            "Adicionar Quarto",
+            "Sair"
+        ];
+
+        const acoes = [
+            () => console.log(this.usuario_logado),
+            () => this.listar_reservas(),
+            () => {
+                const table = new Table({
+                    head: ["Numero", "Tipo", "Preco/noite", "Status"].map(h => chalk.bold(h)),
+                    colWidths: [10, 15, 15, 15],
+                });
+
+                this.quartos.forEach(quarto => {
+                    table.push([
+                        quarto.numero,
+                        quarto.tipo,
+                        `R$ ${quarto.preco_noite.toFixed(2)}`,
+                        quarto.status === "Disponivel" ? chalk.green(quarto.status) : chalk.red(quarto.status)
+                    ]);
+                });
+
+                console.log("\n📋 " + chalk.blue.bold("Lista de Quartos") + "\n");
+                console.log(table.toString());
+            },
+            () => this.listar_clientes(),
+            () => {
+                console.log(chalk.cyan("\nMudar Status da Reserva\n"));
+                const id = readline.questionInt("ID da reserva: ");
+                const reserva = this.reservas.find(r => r.id === id);
+                
+                if (!reserva) {
+                    console.log(chalk.red(" Reserva nao encontrada."));
+                    return;
+                }
+                
+                const status_opcoes = ["Pendente", "Adiada", "Realizada", "Cancelada"];
+                const status_index = readline.keyInSelect(status_opcoes, "Escolha o novo status:");
+                
+                if (status_index === -1) {
+                    console.log(chalk.yellow(" Operacao cancelada."));
+                    return;
+                }
+                
+                reserva.status = status_opcoes[status_index];
+                this.salvar_dados();
+                console.log(chalk.green(` Status da reserva ${id} atualizado para: ${reserva.status}`));
+            },
+            () => {
+                console.log(chalk.cyan("\nAdicionar Quarto\n"));
+                const numero = readline.questionInt("Numero do quarto: ");
+                
+                if (this.quartos.find(q => q.numero === numero)) {
+                    console.log(chalk.red(" Já existe um quarto com este numero."));
+                    return;
+                }
+                
+                const tipos = ["Simples", "Duplo", "Suite"];
+                const tipo_index = readline.keyInSelect(tipos, "Tipo do quarto:");
+                
+                if (tipo_index === -1) {
+                    console.log(chalk.yellow(" Operacao cancelada."));
+                    return;
+                }
+                
+                const preco = readline.questionFloat("Preco por noite: R$ ");
+                
+                const novo_quarto = new Quarto(numero, tipos[tipo_index], preco);
+                this.quartos.push(novo_quarto);
+                console.log(chalk.green(` Quarto ${numero} adicionado com sucesso!`));
+            }
+        ];
+
+        this.exibir_menu("Menu do Funcionario", opcoes, acoes);
+    }
+    
+    menu_principal() {
+        while (true) {
+            const opcoes = ["Fazer Login", "Fazer Cadastro", "Sair do Programa"];
+            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
+            
+            if (escolha === 0) this.login();
+            else if (escolha === 1) {
+                const tipo = readline.keyInSelect(["Cliente", "Funcionario"], "Cadastrar como:") === 0 ? "Cliente" : "Funcionario";
+                this.cadastrar_usuario(tipo);
+            }
+            else if (escolha === 2) return;
+        }
+    }
+}
+
+const sistema = new Sistema();
+sistema.menu_principal();
