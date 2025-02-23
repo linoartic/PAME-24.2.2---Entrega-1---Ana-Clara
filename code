@@ -23,7 +23,7 @@ class Cliente {
         this.senha = senha;
     }
 }
-//classe funcionário representa um funcionario do hotel
+
 class Funcionario {
     constructor(id, nome_usuario, cpf, email, senha) {
         this.id = id;
@@ -33,7 +33,7 @@ class Funcionario {
         this.senha = senha;
     }
 }
-//classe reserva representa uma reserva feita por um cliente
+
 class Avaliacao {
     constructor(nota, comentario) {
         this.nota = nota;
@@ -94,17 +94,11 @@ class CancelamentoReserva {
     }
 }
 
-//classe sistema gerencia clientes, funcionarios e reservas
 class Sistema {
     constructor() {
-        this.clientes = [];// Lista de clientes cadastrados
-        //funcionarios cadastrados
-        this.funcionarios = [
-            new Funcionario(1, "Ana Silva", "12345678900", "ana@hotel.com", "senha123"),
-            new Funcionario(2, "Carlos Souza", "98765432100", "carlos@hotel.com", "senha456"),
-            new Funcionario(3, "Mariana Lima", "45612378900", "mariana@hotel.com", "senha789")
-        ];
-        this.reservas = []; // Lista de reservas registradas
+        this.clientes = [];
+        this.funcionarios = [];
+        this.reservas = [];
         this.quartos = [
             new Quarto(101, "Simples", 150),
             new Quarto(102, "Simples", 150),
@@ -113,10 +107,10 @@ class Sistema {
             new Quarto(301, "Suíte", 400),
             new Quarto(302, "Suíte", 400)
         ];
-        this.usuario_logado = null; // Usuario logado no momento
-        this.carregar_dados(); // Carrega os dados salvos ao iniciar
+        this.usuario_logado = null;
+        this.carregar_dados();
     }
- // Salva os dados do sistema em um arquivo JSON
+
     salvar_dados() {
         const dados = {
             clientes: this.clientes,
@@ -125,41 +119,25 @@ class Sistema {
         };
         fs.writeFileSync("dados.json", JSON.stringify(dados, null, 2));
     }
-    // Carrega os dados do arquivo JSON, se existir
+
     carregar_dados() {
-        // Funcionários padrão
-        this.funcionarios = [
-            new Funcionario(1, "Ana Silva", "12345678900", "ana@hotel.com", "senha123"),
-            new Funcionario(2, "Carlos Souza", "98765432100", "carlos@hotel.com", "senha456"),
-            new Funcionario(3, "Mariana Lima", "45612378900", "mariana@hotel.com", "senha789")
-        ];
-        
         // Carrega dados adicionais se o arquivo existir
         if (fs.existsSync("dados.json")) {
             const dados = JSON.parse(fs.readFileSync("dados.json"));
             this.clientes = dados.clientes || [];
             this.reservas = dados.reservas || [];
         }
-    }
-    ver_meus_dados() {
-        console.log(chalk.cyan("\nMeus Dados\n"));
-        console.log(this.usuario_logado);
-    }
-    
-    mudar_status_reserva() {
-        console.log(chalk.cyan("\nMudar Status da Reserva\n"));
-        const id = readline.questionInt("ID da reserva: ");
-        const reserva = this.reservas.find(r => r.id === id);
-        if (!reserva) {
-            console.log(chalk.red(" Reserva nao encontrada."));
-            return;
+        
+        // Adiciona funcionários padrão se não houver nenhum
+        if (this.funcionarios.length === 0) {
+            this.funcionarios = [
+                new Funcionario(1, "Ana Silva", "12345678900", "ana@hotel.com", "senha123"),
+                new Funcionario(2, "Carlos Souza", "98765432100", "carlos@hotel.com", "senha456"),
+                new Funcionario(3, "Mariana Lima", "45612378900", "mariana@hotel.com", "senha789")
+            ];
         }
-        const status = readline.question("Novo status (pendente, adiada, realizada, cancelada): ");
-        reserva.status = status;
-        this.salvar_dados();
-        console.log(chalk.green(" Status atualizado com sucesso!"));
     }
-            // Metodo para cadastrar uma nova reserva
+
     cadastrar_reserva() {
         console.log(chalk.cyan("\nCadastro de Reserva\n"));
     
@@ -211,7 +189,7 @@ class Sistema {
 
         // Criar reserva
         const reserva = new Reserva(this.reservas.length + 1, cliente.id, "Confirmada", checkIn, checkOut);
-        reserva.quarto_numero = numeroQuarto; // Associar quarto à reserva
+        reserva.quarto_numero = numeroQuarto;
         this.reservas.push(reserva);
         
         // Atualizar status do quarto
@@ -221,7 +199,6 @@ class Sistema {
         console.log(chalk.green(` Reserva criada para ${cliente.nome} (${cliente.email}) no quarto ${numeroQuarto}!`));
     }
 
-    // Método genérico para listar dados
     listar_dados(tipo, dados, colunas) {
         if (dados.length === 0) {
             console.log(chalk.yellow(`⚠️ Nenhum ${tipo} encontrado.`));
@@ -230,7 +207,7 @@ class Sistema {
 
         const table = new Table({
             head: colunas.map(h => chalk.bold(h)),
-            colWidths: colunas.map(() => 15) // Colunas de tamanho uniforme
+            colWidths: colunas.map(() => 15)
         });
 
         dados.forEach(item => {
@@ -271,159 +248,20 @@ class Sistema {
         const nome = readline.question("Nome: ");
         const data_nascimento = readline.question("Data de Nascimento: ");
         const cpf = readline.question("CPF: ");
-    
-        // Armazena a função validar_email corretamente
-    
+        const email = readline.question("E-mail: ");
         const senha = readline.question("Senha: ", { hideEchoBack: true });
     
-        const cliente = new Cliente(this.clientes.length + 1, nome, dataNascimento, cpf, email, senha);
+        const cliente = new Cliente(this.clientes.length + 1, nome, data_nascimento, cpf, email, senha);
         this.clientes.push(cliente);
-        this.salvarDados();
+        this.salvar_dados();
         console.log(chalk.green(" Cliente cadastrado com sucesso!"));
     }
-    // Metodo principal que exibe o menu do sistema
+
     adicionar_quarto() {
         console.log(chalk.cyan("\nAdicionar Quarto\n"));
         console.log(chalk.green(" Funcionalidade ainda a ser implementada."));
     }
 
-    cadastrar_reserva() {
-        console.log(chalk.cyan("\nCadastro de Reserva\n"));
-    
-        // Buscar cliente pelo email
-        const email = readline.question("Digite o e-mail do cliente: ");
-        const cliente = this.clientes.find(c => c.email === email);
-    
-        if (!cliente) {
-            console.log(chalk.red("Cliente nao encontrado. Cadastre-o primeiro."));
-            return;
-        }
-    
-        // Criando uma nova reserva e adicionando ao sistema
-        const checkIn = readline.question("Data de check-in (DD-MM-AAAA): ");
-        const checkOut = readline.question("Data de check-out (DD-MM-AAAA): ");
-        
-        const reserva = new Reserva(this.reservas.length + 1, cliente.id, "Confirmada", checkIn, checkOut);
-        this.reservas.push(reserva);
-        this.salvar_dados();
-    
-        console.log(chalk.green(`Reserva criada para ${cliente.nome} (${cliente.email})!`));
-    }
-
-      // Lista todos os clientes cadastrados no sistema
-    listar_clientes() {
-        if (this.clientes.length === 0) {
-            console.log(chalk.yellow(" Nenhum cliente cadastrado."));
-            return;
-        }
-
-        const table = new Table({
-            head: ["ID", "Nome", "E-mail", "CPF", "Data Nasc."].map(h => chalk.bold(h)),
-            colWidths: [5, 20, 25, 15, 12],
-        });
-
-        this.clientes.forEach(cliente => {
-            table.push([
-                cliente.id,
-                cliente.nome,
-                cliente.email,
-                cliente.cpf,
-                cliente.dataNascimento
-            ]);
-        });
-
-        console.log("\n📋 " + chalk.blue.bold("Lista de Clientes") + "\n");
-        console.log(table.toString());
-    }
-
-        // Lista todas as reservas cadastradas
-    listar_reservas() {
-        if (this.reservas.length === 0) {
-            console.log(chalk.yellow(" Nenhuma reserva encontrada."));
-            return;
-        }
-    
-        const table = new Table({
-            head: ["ID", "Cliente", "Check-in", "Check-out", "Status"].map(h => chalk.bold(h)),
-            colWidths: [5, 20, 15, 15, 12],
-        });
-    
-        this.reservas.forEach(reserva => {
-            const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
-            const nome_cliente = cliente ? cliente.nome : "Nao encontrado";
-    
-            const status_colorido = {
-                "Confirmada": chalk.green(reserva.status),
-                "Cancelada": chalk.red(reserva.status),
-                "Pendente": chalk.yellow(reserva.status)
-            }[reserva.status] || reserva.status;
-    
-            table.push([
-                reserva.id,
-                nome_cliente, // Exibir o nome do cliente em vez do ID
-                reserva.checkIn,
-                reserva.checkOut,
-                status_colorido
-            ]);
-        });
-    
-        console.log("\n📋 " + chalk.blue.bold("Lista de Reservas") + "\n");
-        console.log(table.toString());
-    }
-    
-    
-
-    cadastrar_cliente() {
-        console.log(chalk.cyan("\nCadastro de Cliente\n"));
-        const nome = readline.question("Nome: ");
-        const data_nascimento = readline.question("Data de Nascimento: ");
-        const cpf = readline.question("CPF: ");
-    
-        // Armazena a função validar_email corretamente
-    
-        const senha = readline.question("Senha: ", { hideEchoBack: true });
-    
-        const cliente = new Cliente(this.clientes.length + 1, nome, dataNascimento, cpf, email, senha);
-        this.clientes.push(cliente);
-        this.salvarDados();
-        console.log(chalk.green(" Cliente cadastrado com sucesso!"));
-    }
-    // Metodo principal que exibe o menu do sistema
-    menu_funcionario() {
-        while (true) {
-            const opcoes = [
-                "Cadastro de clientes",
-                "Cadastro de funcionarios",
-                "Login",
-                "Criar reserva",
-                "Listar clientes",
-                "Listar reservas",
-                "Sair"
-            ];
-            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
-            
-            if (escolha === 0) {
-                this.cadastrar_cliente();
-            } else if (escolha === 1) {
-                this.cadastrar_funcionario();
-            } else if (escolha === 2) {
-                this.login();
-                if (this.usuario_logado) break;
-            } else if (escolha === 3) {
-                this.cadastrar_reserva();
-            } else if (escolha === 4) {
-                this.listar_clientes();
-            } else if (escolha === 5) {
-                this.listar_reservas();
-            } else if (escolha === 6) {
-                console.log(chalk.magenta("\nObrigado por usar o nosso sistema!\n"));
-                return;
-            } else {
-                console.log(chalk.red("Esta nao e uma opcao valida"));
-            }
-        }
-    }
-  
     cadastrar_usuario(tipo) {
         console.log(chalk.cyan(`\nCadastro de ${tipo}\n`));
         const nome = readline.question("Nome: ");
@@ -447,7 +285,6 @@ class Sistema {
         const email = readline.question("E-mail: ");
         const senha = readline.question("Senha: ", { hideEchoBack: true });
         
-        // Busca usuário (funcionário ou cliente)
         const usuario = [...this.funcionarios, ...this.clientes]
             .find(u => u.email.toLowerCase() === email.toLowerCase());
             
@@ -641,13 +478,12 @@ class Sistema {
     
     menu_principal() {
         while (true) {
-            const opcoes = ["Fazer Login", "Fazer Cadastro", "Sair do Programa"];
-            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
+            const opcoes = ["Fazer Login", "Cadastrar Cliente", "Sair do Programa"];
+            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:", {cancel: false});
             
             if (escolha === 0) this.login();
             else if (escolha === 1) {
-                const tipo = readline.keyInSelect(["Cliente", "Funcionario"], "Cadastrar como:") === 0 ? "Cliente" : "Funcionario";
-                this.cadastrar_usuario(tipo);
+                this.cadastrar_usuario("Cliente");
             }
             else if (escolha === 2) return;
         }
