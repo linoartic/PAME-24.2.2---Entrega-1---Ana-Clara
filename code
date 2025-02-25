@@ -86,9 +86,15 @@ class CancelamentoReserva {
             return false;
         }
 
+        // Liberar o quarto associado à reserva
+        const quarto = this.quartos.find(q => q.numero === reserva.quarto_numero);
+        if (quarto) {
+            quarto.status = "Disponivel";
+        }
+        
         reserva.status = "Cancelada";
-        this.sistema.salvar_dados(); //salvar no json que estou usando para salvar as informações
-        console.log(chalk.green(" Reserva cancelada com sucesso!"));
+        this.salvar_dados();
+        console.log(chalk.green(" Reserva cancelada com sucesso! Quarto liberado."));
         return true;
     }
 }
@@ -229,7 +235,8 @@ class Sistema {
         quartoSelecionado.status = "Reservado";
         this.salvar_dados();
     
-        console.log(chalk.green(` Reserva criada para ${cliente.nome} (${cliente.email}) no quarto ${numeroQuarto}!`));
+        console.log(chalk.green(` Reserva ID ${reserva.id} criada para ${cliente.nome} (${cliente.email}) no quarto ${numeroQuarto}!`));
+        console.log(chalk.yellow(` Anote o ID da reserva (${reserva.id}) para futuras consultas ou cancelamentos.`));
     }
 
     // Métodopara listar dados
