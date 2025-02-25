@@ -219,6 +219,9 @@ class Sistema {
                         "Pendente": chalk.yellow(item.status)
                     }[item.status] || item.status;
                 }
+                if (col.toLowerCase().includes("check")) {
+                    return item[col.toLowerCase()] || "N/A";
+                }
                 return item[col.toLowerCase()] || item[col];
             });
             table.push(linha);
@@ -236,8 +239,11 @@ class Sistema {
         const reservasComNomes = this.reservas.map(reserva => {
             const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
             return {
-                ...reserva,
-                cliente: cliente ? cliente.nome : "Nao encontrado"
+                id: reserva.id,
+                cliente: cliente ? cliente.nome : "Nao encontrado",
+                status: reserva.status,
+                check_in: reserva.check_in || "N/A",
+                check_out: reserva.check_out || "N/A"
             };
         });
         this.listar_dados("Reservas", reservasComNomes, ["ID", "Cliente", "Check-in", "Check-out", "Status"]);
