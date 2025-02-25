@@ -120,7 +120,8 @@ class Sistema {
         const dados = {
             clientes: this.clientes,
             funcionarios: this.funcionarios,
-            reservas: this.reservas
+            reservas: this.reservas,
+            quartos: this.quartos
         };
         fs.writeFileSync("dados.json", JSON.stringify(dados, null, 2)); 
     }
@@ -138,6 +139,14 @@ class Sistema {
             const dados = JSON.parse(fs.readFileSync("dados.json"));
             this.clientes = dados.clientes || [];
             this.reservas = dados.reservas || [];
+            this.quartos = dados.quartos || [
+                new Quarto(101, "Simples", 150),
+                new Quarto(102, "Simples", 150),
+                new Quarto(201, "Duplo", 250),
+                new Quarto(202, "Duplo", 250),
+                new Quarto(301, "Suíte", 400),
+                new Quarto(302, "Suíte", 400)
+            ];
         }
     }
     ver_meus_dados() {
