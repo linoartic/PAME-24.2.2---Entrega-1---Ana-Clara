@@ -241,49 +241,50 @@ class Sistema {
 
     // Métodopara listar dados
     listar_dados(tipo, dados, colunas) {
+        // Verifica se há dados para exibir
         if (dados.length === 0) {
             console.log(chalk.yellow(`⚠️ Nenhum ${tipo} encontrado.`));
             return;
         }
-
+      // Criação da tabela com cabeçalhos formatados
         const table = new Table({
             head: colunas.map(h => chalk.bold(h)),
             colWidths: colunas.map(() => 15) // Colunas de tamanho uniforme
         });
-
+          // Percorre a lista de dados e adiciona cada item à tabela
         dados.forEach(item => {
             const linha = colunas.map(col => {
                 if (col === "Status") {
-                    return {
+                    return { // Aplica cores diferentes dependendo do status
                         "Confirmada": chalk.green(item.status),
                         "Cancelada": chalk.red(item.status),
                         "Pendente": chalk.yellow(item.status)
                     }[item.status] || item.status;
-                }
+                } // Retorna o valor correspondente à coluna, convertendo para minúsculas quando necessário
                 return item[col.toLowerCase()] || item[col];
             });
-            table.push(linha);
+            table.push(linha); // Adiciona a linha à tabela
         });
-
+        // Exibe a tabela no console
         console.log(`\n📋 ${chalk.blue.bold(`Lista de ${tipo}`)}\n`);
         console.log(table.toString());
     }
-
+     // Método específico para listar clientes
     listar_clientes() {
         this.listar_dados("Clientes", this.clientes, ["ID", "Nome", "E-mail", "CPF", "Data Nasc."]);
     }
-
+    // Método específico para listar reservas, associando nomes dos clientes aos IDs
     listar_reservas() {
         const reservasComNomes = this.reservas.map(reserva => {
             const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
             return {
-                ...reserva,
+                ...reserva, // Mantém todos os atributos da reserva
                 cliente: cliente ? cliente.nome : "Nao encontrado"
             };
-        });
+        }); // Chama o métodoo para exibir as reservas
         this.listar_dados("Reservas", reservasComNomes, ["ID", "Cliente", "Check-in", "Check-out", "Status"]);
     }
-
+//método de cadastro de clientes
     cadastrar_cliente() {
         console.log(chalk.cyan("\nCadastro de Cliente\n"));
         const nome = readline.question("Nome: ");
@@ -328,16 +329,17 @@ class Sistema {
 
       // Lista todos os clientes cadastrados no sistema
     listar_clientes() {
+        // Verifica se há clientes registrados
         if (this.clientes.length === 0) {
             console.log(chalk.yellow(" Nenhum cliente cadastrado."));
             return;
         }
-
+// Criação da tabela para exibição
         const table = new Table({
             head: ["ID", "Nome", "E-mail", "CPF", "Data Nascimento"].map(h => chalk.bold(h)),
             colWidths: [5, 20, 25, 15, 15],
         });
-
+     // Percorre a lista de clientes e adiciona cada um à tabela
         this.clientes.forEach(cliente => {
             table.push([
                 cliente.id,
@@ -347,23 +349,24 @@ class Sistema {
                 cliente.datanascimento || "Não informada"
             ]);
         });
-
+         // Exibe a tabela formatada no console
         console.log("\n📋 " + chalk.blue.bold("Lista de Clientes") + "\n");
         console.log(table.toString());
     }
 
         // Lista todas as reservas cadastradas
     listar_reservas() {
+        // Verifica se há reservas registradas no sistema
         if (this.reservas.length === 0) {
             console.log(chalk.yellow(" Nenhuma reserva encontrada."));
             return;
         }
-    
+    // Criação da tabela para exibir as reservas
         const table = new Table({
             head: ["ID", "Cliente", "Check-in", "Check-out", "Status"].map(h => chalk.bold(h)),
             colWidths: [5, 20, 15, 15, 12],
         });
-    
+    // Busca o cliente correspondente à reserva pelo ID
         this.reservas.forEach(reserva => {
             const cliente = this.clientes.find(c => c.id === reserva.cliente_id);
             const nome_cliente = cliente ? cliente.nome : "Nao encontrado";
@@ -373,7 +376,7 @@ class Sistema {
                 "Cancelada": chalk.red(reserva.status),
                 "Pendente": chalk.yellow(reserva.status)
             }[reserva.status] || reserva.status;
-    
+    // Adiciona os dados da reserva à tabela
             table.push([
                 reserva.id,
                 nome_cliente, // Exibir o nome do cliente em vez do ID
@@ -382,7 +385,7 @@ class Sistema {
                 status_colorido
             ]);
         });
-    
+    // Exibe a tabela formatada no console
         console.log("\n📋 " + chalk.blue.bold("Lista de Reservas") + "\n");
         console.log(table.toString());
     }
@@ -423,32 +426,34 @@ class Sistema {
             }
         }
     }
-  
+  // Método para cadastrar um novo usuário (Cliente ou Funcionário)
     cadastrar_usuario(tipo) {
         console.log(chalk.cyan(`\nCadastro de ${tipo}\n`));
+        // Solicita informações do usuário
         const nome = readline.question("Nome: ");
         const cpf = readline.question("CPF: ");
         const email = readline.question("E-mail: ");
         const datanascimento = readline.question("Data de nascimento: ");
         const senha = readline.question("Senha: ", { hideEchoBack: true });
-        
+        // Se o usuário for um Cliente, cria uma instância da classe Cliente
         if (tipo === "Cliente") {
             const cliente = new Cliente(this.clientes.length + 1, nome, "", cpf, email, senha);
             this.clientes.push(cliente);
-        } else {
+        } else { // Se for um Funcionário, cria uma instância da classe Funcionario
             const funcionario = new Funcionario(this.funcionarios.length + 1, nome, cpf, email, senha);
             this.funcionarios.push(funcionario);
         }
         this.salvar_dados();
         console.log(chalk.green(` ${tipo} cadastrado com sucesso!`));
     }
-
+// Método para realizar o login do usuário
     login() {
         console.log(chalk.cyan("\nLogin\n"));
+        // Solicita credenciais do usuário
         const email = readline.question("E-mail: ");
         const senha = readline.question("Senha: ", { hideEchoBack: true });
         
-        // Busca usuário (funcionário ou cliente)
+        // Busca o usuário na lista de funcionários e clientes pelo e-mail
         const usuario = [...this.funcionarios, ...this.clientes]
             .find(u => u.email.toLowerCase() === email.toLowerCase());
             
@@ -456,15 +461,15 @@ class Sistema {
             console.log(chalk.red(" Email nao cadastrado"));
             return;
         }
-        
+        // Verifica se a senha informada está correta
         if (usuario.senha !== senha) {
             console.log(chalk.red(" Senha incorreta"));
             return;
         }
-        
+        // Define o usuário logado
         this.usuario_logado = usuario;
         console.log(chalk.green(` Login realizado! Bem-vindo(a), ${usuario.nome || usuario.nome_usuario}`));
-        
+        // Direciona o usuário para o menu correto de acordo com seu tipo
         if (usuario instanceof Funcionario) {
             this.menu_funcionario();
         } else {
@@ -488,6 +493,7 @@ class Sistema {
         }
     }
 
+    // Menu principal para clientes
     menu_cliente() {
         const opcoes = [
             "Ver Meus Dados",
@@ -506,7 +512,7 @@ class Sistema {
                     head: ["Numero", "Tipo", "Preco/noite", "Status"].map(h => chalk.bold(h)),
                     colWidths: [10, 15, 15, 15],
                 });
-
+            // Percorre a lista de quartos e adiciona à tabela
                 this.quartos.forEach(quarto => {
                     table.push([
                         quarto.numero,
@@ -519,14 +525,14 @@ class Sistema {
                 console.log("\n📋 " + chalk.blue.bold("Lista de Quartos Disponiveis") + "\n");
                 console.log(table.toString());
                 console.log(chalk.yellow("\nℹ️  Para reservar um quarto, selecione a opcao 'Fazer Reserva'"));
-            },
+            }, // Chama a função para cadastrar uma nova reserva
             () => this.cadastrar_reserva(),
-            () => {
+            () => { // Permite o cancelamento de uma reserva existente
                 const id_reserva = readline.questionInt("ID da reserva para cancelar: ");
                 new CancelamentoReserva(this).cancelar(id_reserva);
             },
             () => this.listar_reservas(),
-            () => {
+            () => { // Permite que o usuário avalie a estadia após a realização da reserva
                 console.log(chalk.cyan("\nAvaliar Estadia\n"));
                 const id_reserva = readline.questionInt("ID da reserva: ");
                 const reserva = this.reservas.find(r => r.id === id_reserva);
@@ -540,7 +546,7 @@ class Sistema {
                     console.log(chalk.red(" So e possivel avaliar estadias realizadas."));
                     return;
                 }
-                
+                // Solicita ao usuário uma nota de 1 a 5 e um comentário sobre a estadia
                 const nota = readline.questionInt("Nota (1 a 5): ");
                 const comentario = readline.question("Comentario: ");
                 
@@ -549,7 +555,7 @@ class Sistema {
                     this.salvar_dados();
                     console.log(chalk.green(" Avaliacao registrada com sucesso!"));
                 } catch (error) {
-                    console.log(chalk.red(` Erro: ${error.message}`));
+                    console.log(chalk.red(` Erro: ${error.message}`)); // Trata possíveis erros na avaliação
                 }
             }
         ];
@@ -557,6 +563,7 @@ class Sistema {
         this.exibir_menu("Menu do Cliente", opcoes, acoes);
     }
     
+    // Menu principal para funcionários
     menu_funcionario() {
         const opcoes = [
             "Ver Meus Dados",
@@ -569,6 +576,7 @@ class Sistema {
         ];
 
         const acoes = [
+            // Exibe o usuário logado no sistema
             () => console.log(this.usuario_logado),
             () => this.listar_reservas(),
             () => {
@@ -576,22 +584,23 @@ class Sistema {
                     head: ["Numero", "Tipo", "Preco/noite", "Status"].map(h => chalk.bold(h)),
                     colWidths: [10, 15, 15, 15],
                 });
-
+                // Percorre a lista de quartos e adiciona à tabela
                 this.quartos.forEach(quarto => {
                     table.push([
                         quarto.numero,
                         quarto.tipo,
-                        `R$ ${quarto.preco_noite.toFixed(2)}`,
+                        `R$ ${quarto.preco_noite.toFixed(2)}`, // Formata o preço para duas casas decimais
                         quarto.status === "Disponivel" ? chalk.green(quarto.status) : chalk.red(quarto.status)
                     ]);
                 });
 
                 console.log("\n📋 " + chalk.blue.bold("Lista de Quartos") + "\n");
-                console.log(table.toString());
+                console.log(table.toString()); // Exibe a tabela formatada
             },
-            () => this.listar_clientes(),
-            () => {
+            () => this.listar_clientes(), // Lista todos os clientes cadastrados
+            () => { // Permite alterar o status de uma reserva existente
                 console.log(chalk.cyan("\nMudar Status da Reserva\n"));
+                // Solicita o ID da reserva a ser modificada
                 const id = readline.questionInt("ID da reserva: ");
                 const reserva = this.reservas.find(r => r.id === id);
                 
@@ -599,23 +608,24 @@ class Sistema {
                     console.log(chalk.red(" Reserva nao encontrada."));
                     return;
                 }
-                
+                // Opções de status disponíveis
                 const status_opcoes = ["Pendente", "Adiada", "Realizada", "Cancelada"];
                 const status_index = readline.keyInSelect(status_opcoes, "Escolha o novo status:");
-                
+                // Verifica se o usuário cancelou a operação
                 if (status_index === -1) {
                     console.log(chalk.yellow(" Operacao cancelada."));
                     return;
                 }
-                
+                // Atualiza o status da reserva
                 reserva.status = status_opcoes[status_index];
                 this.salvar_dados();
                 console.log(chalk.green(` Status da reserva ${id} atualizado para: ${reserva.status}`));
             },
+            // Permite adicionar um novo quarto ao sistema
             () => {
                 console.log(chalk.cyan("\nAdicionar Quarto\n"));
                 const numero = readline.questionInt("Numero do quarto: ");
-                
+        // Verifica se o número do quarto já existe
                 if (this.quartos.find(q => q.numero === numero)) {
                     console.log(chalk.red(" Já existe um quarto com este numero."));
                     return;
@@ -623,14 +633,14 @@ class Sistema {
                 
                 const tipos = ["Simples", "Duplo", "Suite"];
                 const tipo_index = readline.keyInSelect(tipos, "Tipo do quarto:");
-                
+                // Verifica se o usuário cancelou a operação
                 if (tipo_index === -1) {
                     console.log(chalk.yellow(" Operacao cancelada."));
                     return;
                 }
-                
+                // Solicita o preço por noite
                 const preco = readline.questionFloat("Preco por noite: R$ ");
-                
+                // Cria um novo quarto e adiciona à lista de quartos
                 const novo_quarto = new Quarto(numero, tipos[tipo_index], preco);
                 this.quartos.push(novo_quarto);
                 console.log(chalk.green(` Quarto ${numero} adicionado com sucesso!`));
@@ -640,6 +650,7 @@ class Sistema {
         this.exibir_menu("Menu do Funcionario", opcoes, acoes);
     }
     
+    // Menu inicial do sistema
     menu_principal() {
         while (true) {
             const opcoes = ["Fazer Login", "Fazer Cadastro", "Sair do Programa"];
@@ -657,3 +668,4 @@ class Sistema {
 
 const sistema = new Sistema();
 sistema.menu_principal();
+
