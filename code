@@ -318,8 +318,8 @@ class Sistema {
         }
 
         const table = new Table({
-            head: ["ID", "Nome", "E-mail", "CPF", "Data Nasc."].map(h => chalk.bold(h)),
-            colWidths: [5, 20, 25, 15, 12],
+            head: ["ID", "Nome", "E-mail", "CPF", "Data Nascimento"].map(h => chalk.bold(h)),
+            colWidths: [5, 20, 25, 15, 15],
         });
 
         this.clientes.forEach(cliente => {
@@ -328,7 +328,7 @@ class Sistema {
                 cliente.nome,
                 cliente.email,
                 cliente.cpf,
-                cliente.datanascimento
+                cliente.datanascimento || "Não informada"
             ]);
         });
 
