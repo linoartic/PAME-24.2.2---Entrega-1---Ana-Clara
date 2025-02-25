@@ -311,15 +311,28 @@ class Sistema {
     exibir_menu(titulo, opcoes, acoes) {
         while (true) {
             console.log(chalk.cyan(`\n${titulo}\n`));
-            const escolha = readline.keyInSelect(opcoes, "Escolha uma opcao:");
             
-            if (escolha === -1) return;
+            // Exibir opções numeradas
+            opcoes.forEach((opcao, index) => {
+                console.log(chalk.yellow(`[${index + 1}] ${opcao}`));
+            });
+            
+            const escolha = readline.questionInt("\nEscolha uma opcao: ") - 1;
+            
+            // Verifica se é a última opção (Sair)
+            if (escolha === opcoes.length - 1) {
+                console.log(chalk.yellow("\nEncerrando o programa..."));
+                process.exit(0);
+            }
+            
+            if (escolha < 0 || escolha >= opcoes.length) {
+                console.log(chalk.red(" Opcao invalida"));
+                continue;
+            }
             
             const acao = acoes[escolha];
             if (acao) {
                 acao();
-            } else {
-                console.log(chalk.red(" Opcao invalida"));
             }
         }
     }
